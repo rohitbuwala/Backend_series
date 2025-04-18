@@ -77,9 +77,9 @@ userSchema.methods.generateAccessToken = function (){
             userame: this.username,
             fullName: this.fullName
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_SECRET,            //access token ko shottime ke liye use kiya jata hia 
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRES
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRES  
         }
     )
 }
@@ -91,7 +91,7 @@ userSchema.methods.generateRefreshToken = function ( ){
             _id :this._id,
 
         },
-        process.env.REFRESH_TOKEN_SECRET,
+        process.env.REFRESH_TOKEN_SECRET,           //long time ke liye  longterm me
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRES
         }
