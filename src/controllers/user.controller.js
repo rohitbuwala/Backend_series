@@ -1,8 +1,27 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
-import {ApiError} from "../utils/ApiArror.js"
+import {ApiError} from "../utils/ApiError.js"
 import { User} from "../models/user.model.js"
 import {uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
+import cookieParser from "cookie-parser"
+
+const generateAccessAndRefereshTokens = async(userId) =>{
+
+    try {
+        const user =await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
+        
+        return {accessToken, refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating referesh and Access token ")
+        
+    }
+}
 
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -21,7 +40,7 @@ const registerUser = asyncHandler(async (req, res) => {
     //return response to frontend 
 
     const {fullName, email, username, password } =req.body     // esme hum sari value ki res.body se
-    console.log("email:", email)
+    //console.log("email:", email)
 
     // if(fullName === ""){
     //     throw new ApiError(400 , "fullname is required")
@@ -45,7 +64,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const avatarLocalPath =req.files?.avatar[0]?.path;    //user.routes se     loacal path  nikala or upload kiya
 
-    console.log(avatarLocalPath)
+    //console.log(avatarLocalPath)
 
      //const coverImagelocalPath =req.files?.coverImage[0]?.path
 
@@ -90,5 +109,89 @@ const registerUser = asyncHandler(async (req, res) => {
 
  })
 
+ const loginUser = asyncHandler(async (req, res) => {
 
-export  {registerUser}
+    //req body se data chahiye 
+    // username or email 
+    // user ko find krna h ke ni 
+    //passwrod check krna 
+    // send cookies
+    //success login
+
+   const {email, username , password} =  req.body
+
+ 
+   if(!username  && !email){
+    throw new ApiError(400, "username or password is required" )
+   }
+
+   //    if(!(username  || email)){
+    //     throw new ApiError(400, "username or password is required" )
+    //    }
+    
+    const user = await User.findOne({
+        $or: [ {username },{email} ]
+    })
+   // console.log(user)
+    
+   if(!user){
+    throw new ApiError(404 ,"user does not exist")
+   }
+
+  const isPasswordValid = await user.isPasswordCorrect(password)
+
+  if(! isPasswordValid){
+    throw new ApiError(401, "invalid user credentials")
+  }
+
+   const {accessToken, refreshToken} =     await generateAccessAndRefereshTokens(user._id)
+
+   const loggedInUser = await User.findById(user._id).
+   select("-password -refreshToken")
+
+   const option = {
+    httpOnly: true,
+    secure: true
+   }
+
+   return   res
+   .status(200)
+   .cookie("accessToken", accessToken, option)
+   .cookie("refreshToken", refreshToken , option)     //spinling cheak
+   .json(
+    new ApiResponse(200 ,
+        {
+            user : loggedInUser , accessToken , refreshToken
+        },
+        "user Loggin successfully"
+    )
+   )
+
+ })
+
+ const logoutUser = asyncHandler(async ( req, res) => {
+   await  User.findByIdAndUpdate(req.user._id ,
+        {
+            $set:{
+                refreshToken: 1
+            }
+        },
+        {
+            new: true
+        }
+    )
+    const option = {
+        httpOnly: true,
+        secure: true
+       }
+
+       return res 
+       .status(200)
+       .clearCookie("accessToken" , option)
+       .clearCookie("refreshToken" , option)
+       .json( new ApiResponse(200, {} ,"User Logout"))
+    
+ }) 
+
+
+export  {registerUser, loginUser, logoutUser}
