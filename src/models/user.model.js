@@ -79,7 +79,7 @@ const userSchema = new Schema(
             type: String, // cloundinary url
             required: true
         },
-        coverimage: {
+        coverImage: {
             type: String, // cloundinary url
          },
          watchHistory: {
