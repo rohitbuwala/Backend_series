@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import aap from "express"
 
 
 const app =express();
@@ -24,8 +23,10 @@ import userRoutes from "./routes/user.routes.js";
 
 
 //Routes declaration
+//app.use("/api/v1/healcheack", heathcheckRouter)
 
 app.use("/api/v1/users", userRoutes)
+//app.use("/api/v1/tweets",   tweetsRoutes)
 
 // https:localhost:5000/api/v1/users/register
 
