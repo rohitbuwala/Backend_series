@@ -4,6 +4,7 @@ import { User} from "../models/user.model.js"
 import {uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import  jwt  from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefereshTokens = async(userId) =>{
 
@@ -270,7 +271,7 @@ const getcurrentUser = asyncHandler( async (req, res) => {
 
     return res
     .status(200)
-    .json(200, req.user , "current user Fechhed Successfully")
+    .json( new ApiResponse(200, req.user , "current user Fechhed Successfully"))
 
 })
 
@@ -281,7 +282,7 @@ const updateAccountDetails = asyncHandler (async (req, res) => {
         throw new ApiError(400, "All field is required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user =  await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -291,7 +292,7 @@ const updateAccountDetails = asyncHandler (async (req, res) => {
         },
         {new: true}     //update hone ke bad infromation aati h
       ).select(
-        "_password"
+        "-password"
       )
 
       return res.status(200)
@@ -333,7 +334,7 @@ const updateUserCoverImage = asyncHandler (async (req, res) => {
     }
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
-    if(!avatar.url){
+    if(!coverImage.url){
         throw new ApiError(400, "Error while uploading on coverImage") }
 
        const user = await User.findByIdAndUpdate(
@@ -367,7 +368,7 @@ const getUserChannelProfile = asyncHandler(async (req, res ) => {
             },
             {
                 $lookup:{
-                   from: "Subscriptions",
+                   from: "subscriptions",                 //mistake small s th or cap
                    localField: "_id",
                    foreignField: "channel",
                    as: "subscribers"
@@ -376,7 +377,7 @@ const getUserChannelProfile = asyncHandler(async (req, res ) => {
             },
             {
                 $lookup: {
-                    from: "Subscriptions",
+                    from: "subscriptions",                  //mistake small s th or cap
                     localField: "_id",
                     foreignField: "subscriber",
                     as: "subscribedTo"
@@ -413,8 +414,8 @@ const getUserChannelProfile = asyncHandler(async (req, res ) => {
         }
     ])
 
-    if(!channel.length()){
-        throw new ApiError(404, "Channel Does not Exists")
+    if (!channel.length) {
+        throw new ApiError(404, "Channel Does not Exists");
     }
 
     return res
